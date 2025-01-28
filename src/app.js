@@ -18,13 +18,13 @@ app.use("/test", (req, res) => {
   res.send("Test from the server...");
 });
 
-app.use("/", (req, res) => {
-  res.send("slash from the server...");
-});
+// app.use("/", (req, res) => {
+//   res.send("slash from the server...");
+// });
 
-app.use((req, res) => {
-  res.send("Hiiiiiiiii from the server...");
-});
+// app.use((req, res) => {
+//   res.send("Hiiiiiiiii from the server...");
+// });
 
 app.listen(3000, () => {
   console.log(`Example app listening on port 3000.....`);
