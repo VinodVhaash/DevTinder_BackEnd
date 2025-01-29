@@ -9,8 +9,12 @@ app.use(
     //res.send("route handler 1");
     next();
   },
-  (req, res) => {
+  (req, res, next) => {
     res.send("route handler 2");
+    next();
+  },
+  (req, res, next) => {
+    // res.send("route handler 3");
   }
 );
 
