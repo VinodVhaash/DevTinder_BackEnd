@@ -1,22 +1,37 @@
 const express = require("express");
-
+const connectDB = require("./config/database");
 const app = express();
-app.get("/getUserData", (req, res) => {
-  //error hadling using try catch
+const User = require("./models/user");
+
+app.use(express.json());
+
+app.post("/signup", async (req, res) => {
+  console.log(req.body);
+  const { firstName, lastName, emailId, password, age, gender } = req.body;
+  //creating a new instance of a User model
+  const user = new User({
+    firstName,
+    lastName,
+    emailId,
+    password,
+    age,
+    gender,
+  });
   try {
-    throw new Error("dsdfsf");
-    res.send("User data sent");
+    await user.save();
+    res.status(200).send("User added successfully.");
   } catch (err) {
-    res.status(500).send("Some error occured...contact support team.");
+    res.status(400).send("User not inserted..." + err.message);
   }
 });
 
-//error handler.
-app.use("/", (err, req, res, next) => {
-  if (err) {
-    res.status(500).send("something went wrong.");
-  }
-});
-app.listen(3000, () => {
-  console.log(`Example app listening on port 3000.....`);
-});
+connectDB()
+  .then(() => {
+    app.listen(3000, () => {
+      console.log(`Example app listening on port 3000.....`);
+    });
+    console.log("Database connection established...");
+  })
+  .catch((err) => {
+    console.log("Database can not be connected !!!");
+  });
