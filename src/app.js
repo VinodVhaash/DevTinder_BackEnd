@@ -2,26 +2,55 @@ const express = require("express");
 const connectDB = require("./config/database");
 const app = express();
 const User = require("./models/user");
+const { validateSignUpData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
   console.log(req.body);
-  const { firstName, lastName, emailId, password, age, gender } = req.body;
-  //creating a new instance of a User model
-  const user = new User({
-    firstName,
-    lastName,
-    emailId,
-    password,
-    age,
-    gender,
-  });
   try {
+    //validation of data.
+    validateSignUpData(req);
+    const { firstName, lastName, emailId, password } = req.body;
+    //Encrypt the password.
+    const passwordHash = await bcrypt.hash(password, 10);
+    console.log(passwordHash);
+    //creating a new instance of a User model
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
+    });
+
+    // if (req.body.skills.length > 3) {
+    //   throw new Error("More than 3 skills not allowed");
+    //}
     await user.save();
     res.status(200).send("User added successfully.");
   } catch (err) {
-    res.status(400).send("User not inserted..." + err.message);
+    res.status(400).send("ERROR :" + err.message);
+  }
+});
+
+//login api
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId: emailId });
+    console.log(user);
+    if (!user) {
+      throw new Error("EmailId is not present");
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (isPasswordValid) {
+      res.send("Login successfull.");
+    } else {
+      throw new Error("Password is not correct.");
+    }
+  } catch (err) {
+    res.status(400).send("ERROR:" + err.message);
   }
 });
 
@@ -97,6 +126,14 @@ app.patch("/user", async (req, res) => {
   const data = req.body;
   console.log(data);
   try {
+    const ALLOWED_UPDATES = ["userId", "age", "gender", "about"];
+    const isAllowedUpdates = Object.keys(data).every((k) =>
+      ALLOWED_UPDATES.includes(k)
+    );
+    if (!isAllowedUpdates) {
+      console.log(isAllowedUpdates);
+      throw new Error("Update is not allowed");
+    }
     await User.findByIdAndUpdate(userId, data);
     res.send("user updated successfully.");
   } catch (err) {
