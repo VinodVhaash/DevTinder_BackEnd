@@ -6,6 +6,8 @@ const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth");
+const user = require("./models/user");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -42,16 +44,15 @@ app.post("/login", async (req, res) => {
   try {
     const { emailId, password } = req.body;
     const user = await User.findOne({ emailId: emailId });
-    console.log(user);
+
     if (!user) {
       throw new Error("EmailId is not present");
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.validatePassword(password);
     if (isPasswordValid) {
       //Create a JWT token.
-      const token = await jwt.sign({ _id: user._id }, "DEV@Tinder$0823");
-
-      console.log(token);
+      const token = await user.getJWT();
       //Add the token to cookie and the send the response back to the user.
       res.cookie("token", token);
       res.send("Login successfull.");
@@ -64,31 +65,23 @@ app.post("/login", async (req, res) => {
 });
 
 //profile api.
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const cookies = req.cookies;
-
-    const { token } = cookies;
-    //validate my token.
-    if (!token) {
-      throw new Error("Invalid Token");
-    }
-
-    const decodedMessage = await jwt.verify(token, "DEV@Tinder$0823");
-    const { _id } = decodedMessage;
-    console.log("Logged in user is:" + _id);
-    console.log(decodedMessage);
-
-    const user = await User.findById(_id);
-    if (!user) {
-      throw new Error("user not found!!");
-    }
+    const user = req.user;
     res.send(user);
-    console.log(cookies);
-    res.send("cookie recived.");
   } catch (err) {
     res.status(400).send("Something went wrong...");
   }
+});
+
+//Api for sending a connection request.
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  const user = req.user;
+  //Sending a connection request.
+  console.log("Sending a connection request.");
+  res.send(
+    user.firstName + " " + user.lastName + " sent the connection request."
+  );
 });
 
 //find user by email.
