@@ -2,87 +2,20 @@ const express = require("express");
 const connectDB = require("./config/database");
 const app = express();
 const User = require("./models/user");
-const { validateSignUpData } = require("./utils/validation");
-const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
-const { userAuth } = require("./middlewares/auth");
 const user = require("./models/user");
 
 app.use(express.json());
 app.use(cookieParser());
 
-app.post("/signup", async (req, res) => {
-  console.log(req.body);
-  try {
-    //validation of data.
-    validateSignUpData(req);
-    const { firstName, lastName, emailId, password } = req.body;
-    //Encrypt the password.
-    const passwordHash = await bcrypt.hash(password, 10);
-    console.log(passwordHash);
-    //creating a new instance of a User model
-    const user = new User({
-      firstName,
-      lastName,
-      emailId,
-      password: passwordHash,
-    });
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");
 
-    // if (req.body.skills.length > 3) {
-    //   throw new Error("More than 3 skills not allowed");
-    //}
-    await user.save();
-    res.status(200).send("User added successfully.");
-  } catch (err) {
-    res.status(400).send("ERROR :" + err.message);
-  }
-});
-
-//login api
-app.post("/login", async (req, res) => {
-  try {
-    const { emailId, password } = req.body;
-    const user = await User.findOne({ emailId: emailId });
-
-    if (!user) {
-      throw new Error("EmailId is not present");
-    }
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    const isPasswordValid = await user.validatePassword(password);
-    if (isPasswordValid) {
-      //Create a JWT token.
-      const token = await user.getJWT();
-      //Add the token to cookie and the send the response back to the user.
-      res.cookie("token", token);
-      res.send("Login successfull.");
-    } else {
-      throw new Error("Password is not correct.");
-    }
-  } catch (err) {
-    res.status(400).send("ERROR:" + err.message);
-  }
-});
-
-//profile api.
-app.get("/profile", userAuth, async (req, res) => {
-  try {
-    const user = req.user;
-    res.send(user);
-  } catch (err) {
-    res.status(400).send("Something went wrong...");
-  }
-});
-
-//Api for sending a connection request.
-app.post("/sendConnectionRequest", userAuth, async (req, res) => {
-  const user = req.user;
-  //Sending a connection request.
-  console.log("Sending a connection request.");
-  res.send(
-    user.firstName + " " + user.lastName + " sent the connection request."
-  );
-});
+app.use("/", authRouter);
+app.use("/", profileRouter);
+app.use("/", requestRouter);
 
 //find user by email.
 
