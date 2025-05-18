@@ -39,7 +39,7 @@ authRouter.post("/login", async (req, res) => {
     const user = await User.findOne({ emailId: emailId });
 
     if (!user) {
-      throw new Error("EmailId is not present");
+      throw new Error("Invalid Credentials.");
     }
     // const isPasswordValid = await bcrypt.compare(password, user.password);
     const isPasswordValid = await user.validatePassword(password);
@@ -48,12 +48,12 @@ authRouter.post("/login", async (req, res) => {
       const token = await user.getJWT();
       //Add the token to cookie and the send the response back to the user.
       res.cookie("token", token);
-      res.send("Login successfull." + user);
+      res.send(user);
     } else {
-      throw new Error("Password is not correct.");
+      throw new Error("Invalid Credentials.");
     }
   } catch (err) {
-    res.status(400).send("ERROR:" + err.message);
+    res.status(400).send(err.message);
   }
 });
 
